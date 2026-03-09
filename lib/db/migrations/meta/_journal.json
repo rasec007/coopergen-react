@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1772995849308,
+      "tag": "0000_glamorous_marvex",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772998667831,
+      "tag": "0001_solid_purifiers",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773001961142,
+      "tag": "0002_whole_sleepwalker",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773005219442,
+      "tag": "0003_fair_magus",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1773005777203,
+      "tag": "0004_spicy_shockwave",
+      "breakpoints": true
+    }
+  ]
+}
