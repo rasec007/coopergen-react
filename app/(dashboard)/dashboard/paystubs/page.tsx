@@ -99,6 +99,20 @@ export default function PaystubsPage() {
     }
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Deseja realmente excluir o contra cheque de ${name}?`)) return;
+    try {
+      const res = await fetch(`/api/paystubs/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setPaystubs(paystubs.filter(p => p.id !== id));
+      } else {
+        alert('Erro ao excluir contra cheque');
+      }
+    } catch (error) {
+      console.error('Error deleting:', error);
+    }
+  };
+
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 10 }, (_, i) => (currentYear - i).toString());
 
@@ -186,9 +200,13 @@ export default function PaystubsPage() {
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 18 15 15"></polyline></svg>
                         </a>
                       )}
-                      <Link href={`/dashboard/paystubs/${item.id}/delete`} className="action-btn delete" title="Excluir">
+                      <button 
+                        onClick={() => handleDelete(item.id, item.cooperado?.name || '')} 
+                        className="action-btn delete" 
+                        title="Excluir"
+                      >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>

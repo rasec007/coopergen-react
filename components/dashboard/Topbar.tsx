@@ -13,17 +13,10 @@ type TopbarProps = {
 
 export default function Topbar({ userName, activeCooperativaName: propName }: TopbarProps) {
   const router = useRouter();
-  const { activeCooperativaName: contextName } = useActiveCooperativa();
+  const { activeCooperativaName: contextName, openModal } = useActiveCooperativa();
   const [loggingOut, setLoggingOut] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const activeName = contextName || propName;
-
-  useEffect(() => {
-    if (!activeName) {
-      setIsModalOpen(true);
-    }
-  }, [activeName]);
 
   async function handleLogout() {
     if (!confirm('Deseja realmente sair?')) return;
@@ -60,7 +53,7 @@ export default function Topbar({ userName, activeCooperativaName: propName }: To
           </p>
         </div>
         <div className="topbar-actions">
-          <button className="btn-change-coop" onClick={() => setIsModalOpen(true)}>
+          <button className="btn-change-coop" onClick={openModal}>
             Trocar Cooperativa
           </button>
           <div className="logout-btn" onClick={handleLogout} title="Clique para Sair">
@@ -73,14 +66,6 @@ export default function Topbar({ userName, activeCooperativaName: propName }: To
           </div>
         </div>
       </div>
-
-      <ActiveCooperativaModal 
-        isOpen={isModalOpen}
-        onClose={() => {
-          if (activeName) setIsModalOpen(false);
-        }}
-        forceSelection={!activeName}
-      />
 
       <style jsx>{`
         .topbar {
