@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.env*
+npm-debug.log
+README.md
+Dockerfile
+.dockerignore
+build_log.txt
+幼稚
+rasec007
+storage-coopergen
+tabelas
+modelosPDF
+inspiracao
+scripts
+*.md
