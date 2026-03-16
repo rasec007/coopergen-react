@@ -64,6 +64,28 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // ── RBAC: Admin only routes ──────────────────────────────────────────────
+  const adminPrefixes = [
+    '/dashboard/cooperativas',
+    '/dashboard/cooperados',
+    '/dashboard/users',
+    '/dashboard/postos-trabalho',
+    '/api/cooperativas',
+    '/api/cooperados',
+    '/api/users',
+    '/api/postos-trabalho'
+  ];
+
+  const isAdminRoute = adminPrefixes.some(prefix => pathname.startsWith(prefix));
+  
+  if (isAdminRoute && user && user.role !== 'ADM' && user.role !== 'admin') {
+     console.log(`[Middleware] Acesso negado para ${user.email} na rota ${pathname}`);
+     if (pathname.startsWith('/api/')) {
+       return NextResponse.json({ error: 'Acesso negado: Apenas administradores' }, { status: 403 });
+     }
+     return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
   // ── Redirect authenticated users away from auth pages ─────────────────────
   if (isAuthRoute && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url));

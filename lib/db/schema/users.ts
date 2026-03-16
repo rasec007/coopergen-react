@@ -44,6 +44,18 @@ export const refreshTokens = pgTable('refresh_tokens', {
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
 });
 
+// ─── Password Reset Tokens ────────────────────────────────────────────────────
+
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -53,6 +65,13 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
   user: one(users, {
     fields: [refreshTokens.userId],
+    references: [users.id],
+  }),
+}));
+
+export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [passwordResetTokens.userId],
     references: [users.id],
   }),
 }));

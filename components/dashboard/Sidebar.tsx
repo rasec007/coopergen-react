@@ -28,7 +28,15 @@ export default function Sidebar({ userRole }: { userRole: string }) {
     <aside className="sidebar">
       <nav className="sidebar-nav">
         {navItems.map((item) => {
+          // Admin-only check
           if (item.adminOnly && userRole !== 'admin') return null;
+
+          // Specific restriction for 'user' role
+          if (userRole === 'user') {
+            const allowedLabels = ['Meu Perfil', 'Atualizar Senha', 'Atualizar E-mail', 'Contra Cheque'];
+            if (!allowedLabels.includes(item.label)) return null;
+          }
+
           const isActive = pathname === item.href;
 
           return (

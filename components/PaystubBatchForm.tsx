@@ -287,6 +287,25 @@ export default function PaystubBatchForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validações de campos obrigatórios
+    if (!commonData.type || commonData.type === '') {
+      setError('O campo Tipo é obrigatório.');
+      return;
+    }
+    if (!commonData.postoTrabalhoId || commonData.postoTrabalhoId === '') {
+      setError('O campo Posto de Trabalho é obrigatório.');
+      return;
+    }
+    if (!commonData.year || commonData.year === '') {
+      setError('O campo Ano é obrigatório.');
+      return;
+    }
+    if (!commonData.month || commonData.month === '') {
+      setError('O campo Mês é obrigatório.');
+      return;
+    }
+
     if (pendingFiles.length === 0) {
       setError('Por favor, selecione ao menos um arquivo.');
       return;
@@ -339,22 +358,24 @@ export default function PaystubBatchForm() {
         <form onSubmit={handleSubmit} className="form-content">
           <div className="common-grid">
             <div className="input-field">
-              <label>Tipo</label>
+              <label>Tipo *</label>
               <select value={commonData.type} onChange={e => setCommonData({...commonData, type: e.target.value})}>
+                <option value="">Selecione...</option>
                 {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div className="input-field">
-              <label>Posto de Trabalho</label>
+              <label>Posto de Trabalho *</label>
               <select value={commonData.postoTrabalhoId} onChange={e => setCommonData({...commonData, postoTrabalhoId: e.target.value})}>
                 <option value="">Selecione o posto...</option>
                 {postos.map((p: PostoTrabalho) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             <div className="input-field">
-              <label>Ano</label>
+              <label>Ano *</label>
               <select value={commonData.year} onChange={e => setCommonData({...commonData, year: e.target.value})}>
-                {[2026, 2025, 2024, 2023].map(y => <option key={y} value={y}>{y}</option>)}
+                <option value="">Selecione...</option>
+                {['2026', '2025', '2024', '2023', '2022', '2021', '2020'].map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
             <div className="input-field">

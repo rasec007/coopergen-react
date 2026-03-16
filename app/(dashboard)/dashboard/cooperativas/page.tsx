@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Pagination from '@/components/Pagination';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface Cooperativa {
   id: string;
@@ -22,6 +23,11 @@ export default function CooperativasPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCoop, setSelectedCoop] = useState<{ id: string, name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
@@ -32,7 +38,7 @@ export default function CooperativasPage() {
 
   const fetchCooperativas = async () => {
     try {
-      const url = searchTerm 
+      const url = searchTerm
         ? `/api/cooperativas?search=${encodeURIComponent(searchTerm)}`
         : '/api/cooperativas';
       const res = await fetch(url);
@@ -47,24 +53,33 @@ export default function CooperativasPage() {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Deseja realmente excluir a cooperativa ${name}?`)) return;
+  const openDeleteModal = (id: string, name: string) => {
+    setSelectedCoop({ id, name });
+    setIsModalOpen(true);
+  };
 
+  const handleDelete = async () => {
+    if (!selectedCoop) return;
+
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/cooperativas/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/cooperativas/${selectedCoop.id}`, { method: 'DELETE' });
       if (res.ok) {
-        setCooperativas(cooperativas.filter(c => c.id !== id));
+        setCooperativas(cooperativas.filter(c => c.id !== selectedCoop.id));
+        setIsModalOpen(false);
       } else {
         alert('Erro ao excluir cooperativa');
       }
     } catch (error) {
       console.error('Error deleting:', error);
+    } finally {
+      setDeleting(false);
     }
   };
 
   const handleStatusToggle = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'Ativo' ? 'Inativo' : 'Ativo';
-    
+
     try {
       const res = await fetch(`/api/cooperativas/${id}`, {
         method: 'PATCH',
@@ -73,7 +88,7 @@ export default function CooperativasPage() {
       });
 
       if (res.ok) {
-        setCooperativas(cooperativas.map(c => 
+        setCooperativas(cooperativas.map(c =>
           c.id === id ? { ...c, status: newStatus } : c
         ));
       }
@@ -86,21 +101,22 @@ export default function CooperativasPage() {
     <div className="coop-container">
       <div className="header-section">
         <div className="title-row">
-           <Link href="/dashboard/cooperativas/new" className="btn-add-circle" title="Nova Unidade">
-             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter">
-               <line x1="12" y1="5" x2="12" y2="19"></line>
-               <line x1="5" y1="12" x2="19" y2="12"></line>
-             </svg>
-           </Link>
-           <h1 className="center-title">Listagem de Cooperativas</h1>
-           <div style={{ width: '44px' }}></div>
+          <Link href="/dashboard/cooperativas/new" className="btn-add-circle" title="Nova Unidade">
+            <svg width="37" height="37" viewBox="0 0 37 37" fill="none">
+              <circle cx="18.5" cy="18.5" r="18.5" fill="#83004c" />
+              <line x1="18.5" y1="10" x2="18.5" y2="27" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+              <line x1="10" y1="18.5" x2="27" y2="18.5" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+            </svg>
+          </Link>
+          <h1 className="center-title">Listagem de Cooperativas</h1>
+          <div style={{ width: '44px' }}></div>
         </div>
-        
+
         <div className="search-box">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input 
-            type="text" 
-            placeholder="Pesquisar por nome ou email..." 
+          <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input
+            type="text"
+            placeholder="Pesquisar por nome ou email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -131,10 +147,10 @@ export default function CooperativasPage() {
                     <td className="actions-cell">
                       <div className="actions-group-left">
                         <Link href={`/dashboard/cooperativas/${item.id}/edit`} className="action-btn edit" title="Editar">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         </Link>
-                        <button onClick={() => handleDelete(item.id, item.name)} className="action-btn delete" title="Excluir">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        <button onClick={() => openDeleteModal(item.id, item.name)} className="action-btn delete" title="Excluir">
+                          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                         </button>
                       </div>
                     </td>
@@ -151,8 +167,8 @@ export default function CooperativasPage() {
                     </td>
                     <td>{item.responsible}</td>
                     <td>
-                      <div 
-                        className="status-toggle" 
+                      <div
+                        className="status-toggle"
                         onClick={() => handleStatusToggle(item.id, item.status)}
                       >
                         <div className={`toggle-track ${item.status === 'Ativo' ? 'active' : ''}`}>
@@ -174,6 +190,16 @@ export default function CooperativasPage() {
           onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
         />
       </div>
+
+      <ConfirmModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Excluir Cooperativa"
+        message={`Deseja realmente excluir a cooperativa "${selectedCoop?.name}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        loading={deleting}
+      />
 
       <style jsx>{`
         .coop-container {
@@ -205,23 +231,16 @@ export default function CooperativasPage() {
 
         .btn-add-circle {
           background-color: transparent;
-          color: #000000;
-          width: 44px;
-          height: 44px;
-          border-radius: 8px; /* Square with rounded corners */
           display: flex;
           align-items: center;
           justify-content: center;
           text-decoration: none;
-          transition: background-color 0.2s;
-        }
-
-        .btn-add-circle svg {
-          stroke: #000000; /* Black plus sign */
+          transition: transform 0.2s, opacity 0.2s;
         }
 
         .btn-add-circle:hover {
-          background-color: #f1f5f9;
+          transform: scale(1.1);
+          opacity: 0.9;
         }
 
         .search-box {
@@ -234,7 +253,10 @@ export default function CooperativasPage() {
         .search-box svg {
           position: absolute;
           left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
           color: #94a3b8;
+          display: block;
         }
 
         .search-box input {
@@ -250,6 +272,24 @@ export default function CooperativasPage() {
           outline: none;
           border-color: #83004c;
         }
+
+        .action-btn {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          width: 40px;
+          height: 40px;
+          padding: 0 !important;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+
+        .actions-group-left {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
 
         .table-card {
           background: white;
@@ -298,11 +338,10 @@ export default function CooperativasPage() {
         }
 
         .main-name {
-          font-weight: 600;
           color: #1e293b;
-        }
-
-        .contact-cell {
+          font-size: 15px;
+          font-weight: 500;
+        }.contact-cell {
           display: flex;
           flex-direction: column;
         }

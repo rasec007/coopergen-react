@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Pagination from '@/components/Pagination';
 import { useActiveCooperativa } from '@/lib/context/ActiveCooperativaContext';
+import UserPaystubView from '@/components/dashboard/UserPaystubView';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface Paystub {
   id: string;
@@ -46,6 +48,7 @@ export default function PaystubsPage() {
   const { activeCooperativaId } = useActiveCooperativa();
   const [paystubs, setPaystubs] = useState<Paystub[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   
   // Filters
   const [filterType, setFilterType] = useState('all');
@@ -58,8 +61,13 @@ export default function PaystubsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPaystub, setSelectedPaystub] = useState<{ id: string, name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
-    fetchPostos();
+    fetchUserAndPostos();
   }, []);
 
   useEffect(() => {
@@ -70,11 +78,22 @@ export default function PaystubsPage() {
     fetchPaystubs();
   }, [filterType, filterYear, filterMonth, filterPosto, searchTerm, activeCooperativaId]);
 
-  const fetchPostos = async () => {
+  const fetchUserAndPostos = async () => {
     try {
-      const res = await fetch('/api/postos-trabalho');
-      const data = await res.json();
-      if (res.ok) setPostos(data);
+      const [userRes, postosRes] = await Promise.all([
+        fetch('/api/auth/me'),
+        fetch('/api/postos-trabalho')
+      ]);
+      
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setUser(userData);
+      }
+      
+      if (postosRes.ok) {
+        const postosData = await postosRes.json();
+        setPostos(postosData);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -99,33 +118,47 @@ export default function PaystubsPage() {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Deseja realmente excluir o contra cheque de ${name}?`)) return;
+  const openDeleteModal = (id: string, name: string) => {
+    setSelectedPaystub({ id, name });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedPaystub) return;
+
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/paystubs/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/paystubs/${selectedPaystub.id}`, { method: 'DELETE' });
       if (res.ok) {
-        setPaystubs(paystubs.filter(p => p.id !== id));
+        setPaystubs(paystubs.filter(p => p.id !== selectedPaystub.id));
+        setIsModalOpen(false);
       } else {
         alert('Erro ao excluir contra cheque');
       }
     } catch (error) {
       console.error('Error deleting:', error);
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 10 }, (_, i) => (currentYear - i).toString());
+  const years = ['2026', '2025', '2024', '2023', '2022', '2021', '2020'];
+
+  if (user?.role === 'user') {
+    return <UserPaystubView userName={user.name} />;
+  }
 
   return (
     <div className="paystub-container">
       <div className="header-section">
         <div className="title-row">
-           <Link href="/dashboard/paystubs/new" className="btn-add-circle" title="Novo Contra Cheque">
-             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter">
-               <line x1="12" y1="5" x2="12" y2="19"></line>
-               <line x1="5" y1="12" x2="19" y2="12"></line>
-             </svg>
-           </Link>
+            <Link href="/dashboard/paystubs/new" className="btn-add-circle" title="Novo Contra Cheque">
+              <svg width="37" height="37" viewBox="0 0 37 37" fill="none">
+                <circle cx="18.5" cy="18.5" r="18.5" fill="#83004c" />
+                <line x1="18.5" y1="10" x2="18.5" y2="27" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+                <line x1="10" y1="18.5" x2="27" y2="18.5" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+            </Link>
            <h1 className="center-title">Listar Contra Cheque</h1>
            <div style={{ width: '44px' }}></div>
         </div>
@@ -193,19 +226,19 @@ export default function PaystubsPage() {
                     
                     <div className="card-actions-row">
                       <Link href={`/dashboard/paystubs/${item.id}/edit`} className="action-btn edit" title="Editar">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                       </Link>
                       {item.fileUrl && (
                         <a href={item.fileUrl} target="_blank" className="action-btn download" title="Ver Arquivo">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 18 15 15"></polyline></svg>
+                          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 18 15 15"></polyline></svg>
                         </a>
                       )}
                       <button 
-                        onClick={() => handleDelete(item.id, item.cooperado?.name || '')} 
+                        onClick={() => openDeleteModal(item.id, item.cooperado?.name || '')} 
                         className="action-btn delete" 
                         title="Excluir"
                       >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                       </button>
                     </div>
                   </div>
@@ -223,15 +256,35 @@ export default function PaystubsPage() {
         )}
       </div>
 
+      <ConfirmModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Excluir Contra Cheque"
+        message={`Deseja realmente excluir o documento de "${selectedPaystub?.name}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        loading={deleting}
+      />
+
       <style jsx>{`
         .paystub-container { padding: 20px; }
         .header-section { margin-bottom: 24px; }
         .title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
         h1.center-title { font-size: 26px; color: #1d2d50; font-weight: 700; flex-grow: 1; text-align: center; }
         
-        .btn-add-circle { background-color: transparent; width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; transition: all 0.2s; }
-        .btn-add-circle svg { stroke: #000000; }
-        .btn-add-circle:hover { background-color: #f1f5f9; }
+        .btn-add-circle { 
+          background-color: transparent; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          text-decoration: none; 
+          transition: transform 0.2s, opacity 0.2s; 
+        }
+
+        .btn-add-circle:hover { 
+          transform: scale(1.1);
+          opacity: 0.9;
+        }
 
         .filters-container { background: white; padding: 24px; border-radius: 12px; border: 1px solid #f1f5f9; margin-bottom: 32px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .filters-label { text-align: center; font-size: 14px; font-weight: 700; color: #475569; margin-bottom: 24px; letter-spacing: 1px; }
@@ -269,18 +322,20 @@ export default function PaystubsPage() {
           align-items: center; 
           justify-content: center;
           gap: 12px; 
-          padding: 4px 0;
+          padding: 8px 0;
         }
         
         .action-btn { 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
+          display: flex !important; 
+          align-items: center !important; 
+          justify-content: center !important; 
           cursor: pointer; 
           transition: transform 0.2s, opacity 0.2s; 
           color: #64748b;
           border-radius: 8px;
-          padding: 8px;
+          padding: 0 !important;
+          width: 40px;
+          height: 40px;
           border: 1px solid transparent;
         }
         .action-btn:hover { transform: scale(1.1); opacity: 0.8; }

@@ -11,9 +11,13 @@ export async function GET(req: NextRequest) {
   try {
     const token = await getAccessTokenFromCookies();
     let userRole = null;
+    let userId = null;
     if (token) {
       const payload = await verifyAccessToken(token);
-      if (payload) userRole = payload.role;
+      if (payload) {
+        userRole = payload.role;
+        userId = payload.userId;
+      }
     }
 
     const { searchParams } = new URL(req.url);
@@ -44,6 +48,22 @@ export async function GET(req: NextRequest) {
     }
     if (postoTrabalhoId && postoTrabalhoId !== 'all') {
       conditions.push(eq(paystubs.postoTrabalhoId, postoTrabalhoId));
+    }
+
+    // Security Filter for 'user' role
+    if (userRole === 'user' && userId) {
+      const [userCooperado] = await db
+        .select({ id: cooperados.id })
+        .from(cooperados)
+        .where(eq(cooperados.userId, userId))
+        .limit(1);
+      
+      if (userCooperado) {
+        conditions.push(eq(paystubs.cooperadoId, userCooperado.id));
+      } else {
+        // If user has no linked cooperado, return empty list
+        return NextResponse.json([]);
+      }
     }
 
     // Join with cooperados for search and filtering by cooperativa

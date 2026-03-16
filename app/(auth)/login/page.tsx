@@ -61,9 +61,12 @@ export default function LoginPage() {
               Entrar
             </button>
             
-            <a href="#" className="btn-coopergen-secondary">
+            <button 
+              className="btn-coopergen-secondary" 
+              onClick={() => router.push('/ctrchequerpa')}
+            >
               Baixar Contra Cheque
-            </a>
+            </button>
           </div>
         </>
       ) : (
@@ -143,9 +146,21 @@ export default function LoginPage() {
             </div>
 
             <div style={{ textAlign: 'center', marginTop: '8px' }}>
-              <a href="#" style={{ color: '#5D3FD3', fontSize: '14px', textDecoration: 'none', opacity: 0.8 }}>
+              <button 
+                type="button"
+                onClick={() => router.push('/forgot-password')}
+                style={{ 
+                  background: 'none',
+                  border: 'none',
+                  color: '#5D3FD3', 
+                  fontSize: '14px', 
+                  textDecoration: 'none', 
+                  opacity: 0.8,
+                  cursor: 'pointer'
+                }}
+              >
                 Esqueci minha senha
-              </a>
+              </button>
             </div>
           </form>
         </div>

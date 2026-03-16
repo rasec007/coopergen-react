@@ -111,6 +111,33 @@ export default function PaystubSingleForm({ initialData, isEdit = false }: Payst
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validações de campos obrigatórios com mensagens específicas
+    if (!formData.cooperadoId || formData.cooperadoId === '') {
+      setError('O campo Cooperado é obrigatório.');
+      return;
+    }
+    if (!formData.type || formData.type === '') {
+      setError('O campo Tipo é obrigatório.');
+      return;
+    }
+    if (!formData.postoTrabalhoId || formData.postoTrabalhoId === '') {
+      setError('O campo Posto de Trabalho é obrigatório.');
+      return;
+    }
+    if (!formData.year || formData.year === '') {
+      setError('O campo Ano é obrigatório.');
+      return;
+    }
+    if (!formData.month || formData.month === '') {
+      setError('O campo Mês é obrigatório.');
+      return;
+    }
+    if (!formData.fileUrl || formData.fileUrl === '') {
+      setError('O arquivo PDF é obrigatório.');
+      return;
+    }
+
     setSaving(true);
     setError('');
 
@@ -149,36 +176,39 @@ export default function PaystubSingleForm({ initialData, isEdit = false }: Payst
           <div className="form-grid">
             <div className="input-field">
               <label htmlFor="cooperadoId">Cooperado *</label>
-              <select id="cooperadoId" value={formData.cooperadoId} onChange={handleChange} required>
+              <select id="cooperadoId" value={formData.cooperadoId} onChange={handleChange}>
                 <option value="">Selecione o cooperado...</option>
                 {cooperados.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
 
             <div className="input-field">
-              <label htmlFor="type">Tipo</label>
+              <label htmlFor="type">Tipo *</label>
               <select id="type" value={formData.type} onChange={handleChange}>
+                <option value="">Selecione...</option>
                 {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
 
             <div className="dual-row">
               <div className="input-field">
-                <label htmlFor="year">Ano</label>
+                <label htmlFor="year">Ano *</label>
                 <select id="year" value={formData.year} onChange={handleChange}>
-                   {[2026, 2025, 2024, 2023].map(y => <option key={y} value={y}>{y}</option>)}
+                   <option value="">Selecione...</option>
+                   {['2026', '2025', '2024', '2023', '2022', '2021', '2020'].map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
               <div className="input-field">
-                <label htmlFor="month">Mês</label>
+                <label htmlFor="month">Mês *</label>
                 <select id="month" value={formData.month} onChange={handleChange}>
+                   <option value="">Selecione...</option>
                    {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                 </select>
               </div>
             </div>
 
             <div className="input-field">
-              <label htmlFor="postoTrabalhoId">Posto de Trabalho</label>
+              <label htmlFor="postoTrabalhoId">Posto de Trabalho *</label>
               <select id="postoTrabalhoId" value={formData.postoTrabalhoId} onChange={handleChange}>
                 <option value="">Selecione o posto...</option>
                 {postos.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}

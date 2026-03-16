@@ -4,28 +4,31 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import LogoCoopergen from '@/components/LogoCoopergen';
 import ActiveCooperativaModal from '@/components/ActiveCooperativaModal';
+import ConfirmModal from '@/components/ConfirmModal';
 import { useActiveCooperativa } from '@/lib/context/ActiveCooperativaContext';
 
 type TopbarProps = {
   userName: string;
+  userRole?: string;
   activeCooperativaName?: string;
 };
 
-export default function Topbar({ userName, activeCooperativaName: propName }: TopbarProps) {
+export default function Topbar({ userName, userRole, activeCooperativaName: propName }: TopbarProps) {
   const router = useRouter();
   const { activeCooperativaName: contextName, openModal } = useActiveCooperativa();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const activeName = contextName || propName;
 
   async function handleLogout() {
-    if (!confirm('Deseja realmente sair?')) return;
     setLoggingOut(true);
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       router.push('/login');
       router.refresh();
-    } finally {
+    } catch (error) {
+      console.error('Erro ao sair:', error);
       setLoggingOut(false);
     }
   }
@@ -48,15 +51,19 @@ export default function Topbar({ userName, activeCooperativaName: propName }: To
       <div className="topbar-right">
         <div className="user-info-text">
           <p><strong>Usuário:</strong> {userName}</p>
-          <p>
-            <strong>Cooperativa:</strong> {activeName || 'Nenhuma selecionada'}
-          </p>
+          {userRole !== 'user' && (
+            <p>
+              <strong>Cooperativa:</strong> {activeName || 'Nenhuma selecionada'}
+            </p>
+          )}
         </div>
         <div className="topbar-actions">
-          <button className="btn-change-coop" onClick={openModal}>
-            Trocar Cooperativa
-          </button>
-          <div className="logout-btn" onClick={handleLogout} title="Clique para Sair">
+          {userRole !== 'user' && (
+            <button className="btn-change-coop" onClick={openModal}>
+              Trocar Cooperativa
+            </button>
+          )}
+          <div className="logout-btn" onClick={() => setIsLogoutModalOpen(true)} title="Clique para Sair">
             Sair
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" style={{ marginLeft: '4px' }}>
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -66,6 +73,17 @@ export default function Topbar({ userName, activeCooperativaName: propName }: To
           </div>
         </div>
       </div>
+
+      <ConfirmModal 
+        isOpen={isLogoutModalOpen}
+        title="Confirmar Saída"
+        message="Deseja realmente sair do sistema?"
+        confirmLabel="Sair"
+        cancelLabel="Fechar"
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        loading={loggingOut}
+      />
 
       <style jsx>{`
         .topbar {

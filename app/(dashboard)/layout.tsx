@@ -23,7 +23,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <ActiveCooperativaProvider initialId={activeCoopId} initialName={decodedName}>
       <div className="dashboard-layout">
-        <Topbar userName={user.name} activeCooperativaName={decodedName} />
+        <Topbar 
+          userName={user.name} 
+          userRole={user.role}
+          activeCooperativaName={decodedName} 
+        />
         
         <div className="dashboard-body">
           <Sidebar userRole={user.role} />
