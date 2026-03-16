@@ -18,18 +18,29 @@ async function extractText(path) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       
-      const items = textContent.items.sort((a, b) => {
-        const yDiff = b.transform[5] - a.transform[5];
-        if (Math.abs(yDiff) > 5) return yDiff;
-        return a.transform[4] - b.transform[4];
+      console.log(`--- PAGE ${i} ITEMS START ---`);
+      textContent.items.forEach(item => {
+        if (item.str.trim()) {
+            const x = item.transform[4];
+            const y = item.transform[5];
+            console.log(`[X:${x.toFixed(2)}, Y:${y.toFixed(2)}] '${item.str}'`);
+        }
       });
+      console.log(`--- PAGE ${i} ITEMS END ---`);
       
-      fullText += items.map(item => item.str).join(' ') + '\n';
+      const pageTextNoSpace = textContent.items.map(item => item.str).join('');
+      const pageTextWithSpace = textContent.items.map(item => item.str).join(' ');
+      
+      console.log(`--- PAGE ${i} RAW JOIN START ---`);
+      console.log(pageTextNoSpace);
+      console.log(`--- PAGE ${i} RAW JOIN END ---`);
+      
+      fullText += pageTextWithSpace + '\n';
     }
     
-    console.log('--- TEXT START ---');
+    console.log('--- FULL TEXT START ---');
     console.log(fullText);
-    console.log('--- TEXT END ---');
+    console.log('--- FULL TEXT END ---');
   } catch (err) {
     console.error('Error:', err);
   }

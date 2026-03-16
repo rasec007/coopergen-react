@@ -114,16 +114,22 @@ export default function PaystubBatchForm() {
   const extractNameFromText = useCallback((text: string) => {
     // Regex aprimorado para encontrar o nome do cooperado
     const patterns = [
-      /(?:Nome\s+Completo|Empregado)[:\s]+(?:\d+\s+)?([A-ZÀ-Ÿ]{5,50}(?:\s+[A-ZÀ-Ÿ]{2,50})+)/i,
+      // Especifico para modelo MDB: consome "Empregado Cargo Lotação" e matricula, pega o nome
+      /(?:Empregado\s+Cargo\s+Lotação|Empregado\s+Cargo\/Lotação)[\s\d]+([A-ZÀ-Ÿ]{3,}(?:\s+[A-ZÀ-Ÿ]{2,})+)/i,
+      // Geral: Consome "Empregado" e matricula, garante que NÃO comece com "Cargo Lotação"
+      /(?:Nome\s+Completo|Empregado)[:\s]+(?:\d+\s+)?(?:Cargo\s+Lotação\s+|Cargo\/Lotação\s+|Cargo\s+Lotacao\s+)?(?!(?:Cargo\s+Lotação|Cargo\/Lotação|Cargo\s+Lotacao))([A-ZÀ-Ÿ]{3,}(?:\s+[A-ZÀ-Ÿ]{2,})+)/i,
       /Nome\s+do\s+Cooperado[:\s]+([A-ZÀ-Ÿ]{5,50}(?:\s+[A-ZÀ-Ÿ]{2,50})+)/i,
-      /Cooperado[:\s]+([A-ZÀ-Ÿ]{5,50}(?:\s+[A-ZÀ-Ÿ]{2,50})+)/i,
-      /Nome\s*:\s+((?!ou\s+Razão\s+Social)[A-ZÀ-Ÿ]{5,50}(?:\s+[A-ZÀ-Ÿ]{2,50})+)/i
+      /Cooperado[:\s]+([A-ZÀ-Ÿ]{3,50}(?:\s+[A-ZÀ-Ÿ]{2,50})+)/i,
+      /Nome\s*:\s+((?!ou\s+Razão\s+Social)[A-ZÀ-Ÿ]{3,50}(?:\s+[A-ZÀ-Ÿ]{2,50})+)/i
     ];
 
     for (const pattern of patterns) {
       const match = text.match(pattern);
       if (match && match[1]) {
-        return match[1].trim();
+        let name = match[1].trim();
+        // Limpeza: remove cargos comuns que podem vir grudados no nome neste modelo
+        name = name.replace(/\s+(TECNICO|ENFERMEIRO|AUXILIAR|COORDENADOR|PROMOTOR|M\s+DIAS|BRANCO).*$/i, '');
+        return name;
       }
     }
     return null;
