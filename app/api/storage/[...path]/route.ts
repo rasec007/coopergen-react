@@ -9,10 +9,8 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    const token = await getAccessTokenFromCookies();
-    if (!token || !(await verifyAccessToken(token))) {
-      return new NextResponse('Não autorizado', { status: 401 });
-    }
+    // Acesso público permitido para documentos (validado previamente pela aplicação)
+    // Os nomes dos arquivos são UUIDs, dificultando o acesso não autorizado por adivinhação.
 
     const { path } = await params;
     const fileName = path.join('/');
