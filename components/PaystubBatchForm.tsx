@@ -112,23 +112,29 @@ export default function PaystubBatchForm() {
   };
 
   const extractNameFromText = useCallback((text: string) => {
-    // Regex aprimorado para encontrar o nome do cooperado
+    // Regex para encontrar o nome do cooperado (ordem de especificidade decrescente)
     const patterns = [
-      // Especifico para modelo MDB: consome "Empregado Cargo Lotação" e matricula, pega o nome
-      /(?:Empregado\s+Cargo\s+Lotação|Empregado\s+Cargo\/Lotação)[\s\d]+([A-ZÀ-Ÿ]{3,}(?:\s+[A-ZÀ-Ÿ]{2,})+)/i,
-      // Geral: Consome "Empregado" e matricula, garante que NÃO comece com "Cargo Lotação"
-      /(?:Nome\s+Completo|Empregado)[:\s]+(?:\d+\s+)?(?:Cargo\s+Lotação\s+|Cargo\/Lotação\s+|Cargo\s+Lotacao\s+)?(?!(?:Cargo\s+Lotação|Cargo\/Lotação|Cargo\s+Lotacao))([A-ZÀ-Ÿ]{3,}(?:\s+[A-ZÀ-Ÿ]{2,})+)/i,
-      /Nome\s+do\s+Cooperado[:\s]+([A-ZÀ-Ÿ]{5,50}(?:\s+[A-ZÀ-Ÿ]{2,50})+)/i,
-      /Cooperado[:\s]+([A-ZÀ-Ÿ]{3,50}(?:\s+[A-ZÀ-Ÿ]{2,50})+)/i,
-      /Nome\s*:\s+((?!ou\s+Razão\s+Social)[A-ZÀ-Ÿ]{3,50}(?:\s+[A-ZÀ-Ÿ]{2,50})+)/i
+      // 1. MDB (Recibo de Cooperados): "Empregado Cargo Lotação 002376 NOME CARGO"
+      /(?:Empregado\s+Cargo\s+Lotação|Empregado\s+Cargo\/Lotação)[\s\d]+([A-ZÀ-Ÿ]{2,}(?:\s+[A-ZÀ-Ÿ]{1,})+)/i,
+
+      // 2. Coopassend/Comprovante RF: "CPF Título de Eleitor Nome Completo" + números + NOME
+      /CPF\s+T[íi]tulo\s+de\s+Eleitor\s+Nome\s+Completo[\s\d.\-\/]+([A-ZÀ-Ÿ]{2,}(?:\s+[A-ZÀ-Ÿ]{1,})+)/i,
+
+      // 3. Coopsic e outros: "Nome Completo:" ou "Empregado:" + nome direto
+      /(?:Nome\s+Completo|Empregado)[:\s]+(?:\d+\s+)?(?:Cargo\s+Lotação\s+|Cargo\/Lotação\s+)?(?!(?:Cargo\s+Lotação|Cargo\/Lotação|CNPJ|CPF|Data|Assinatura))([A-ZÀ-Ÿ]{2,}(?:\s+[A-ZÀ-Ÿ]{1,})+)/i,
+
+      // 4. Nome do Cooperado explícito
+      /Nome\s+do\s+Cooperado[:\s]+([A-ZÀ-Ÿ]{3,50}(?:\s+[A-ZÀ-Ÿ]{1,50})+)/i,
     ];
 
     for (const pattern of patterns) {
       const match = text.match(pattern);
       if (match && match[1]) {
         let name = match[1].trim();
-        // Limpeza: remove cargos comuns que podem vir grudados no nome neste modelo
-        name = name.replace(/\s+(TECNICO|ENFERMEIRO|AUXILIAR|COORDENADOR|PROMOTOR|M\s+DIAS|BRANCO).*$/i, '');
+        // Remove cargos e termos que aparecem colados ao nome no modelo MDB
+        name = name.replace(/\s+(TECNICO|ENFERMEIRO|AUXILIAR|COORDENADOR|PROMOTOR|AUX\.|M\s+DIAS|BRANCO|Natureza|DATA|ASSINATURA).*$/i, '');
+        // Rejeita se ficou muito longo (>7 palavras = provavelmente capturou texto errado)
+        if (name.split(/\s+/).length > 7) return null;
         return name;
       }
     }
@@ -229,15 +235,18 @@ export default function PaystubBatchForm() {
         let nameFound = extractNameFromText(pdfText);
         
         // Segundo passo: Se não achou por regex, busca se algum nome de cooperado existe no texto
+        // IMPORTANTE: só busca na primeira metade do texto para evitar pegar nomes de rodapé/assinatura
         if (!nameFound) {
-           const foundInContent = cooperados.find((c: Cooperado) => {
-             const coopNameClean = c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-             return coopNameClean.length > 8 && pdfTextClean.includes(coopNameClean);
-           });
-           if (foundInContent) {
-             nameFound = foundInContent.name;
-             if (!linkedId) linkedId = foundInContent.id;
-           }
+          const firstHalfText = pdfTextClean.substring(0, Math.floor(pdfTextClean.length * 0.5));
+          const foundInContent = cooperados.find((c: Cooperado) => {
+            const coopNameClean = c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            // Nome deve ter pelo menos 12 chars para reduzir falsos positivos
+            return coopNameClean.length >= 12 && firstHalfText.includes(coopNameClean);
+          });
+          if (foundInContent) {
+            nameFound = foundInContent.name;
+            if (!linkedId) linkedId = foundInContent.id;
+          }
         }
         
         if (nameFound) {
@@ -245,7 +254,7 @@ export default function PaystubBatchForm() {
           if (!linkedId) {
             const nameMatch = cooperados.find((c: Cooperado) => {
                const n1 = c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-               const n2 = nameFound.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+               const n2 = nameFound!.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
                return n1 === n2 || n2.includes(n1) || n1.includes(n2);
             });
             if (nameMatch) linkedId = nameMatch.id;
