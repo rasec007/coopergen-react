@@ -117,18 +117,26 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-    if (!body.cooperadoId || !body.month || !body.year) {
-      return NextResponse.json({ error: 'Cooperado, Mês e Ano são obrigatórios' }, { status: 400 });
+    // Mês só é obrigatório para Contra Cheque
+    const isContraCheque = !body.type || body.type === 'Contra Cheque';
+    const isMonthMissing = isContraCheque && (!body.month || body.month === '');
+    
+    if (!body.cooperadoId || !body.year || isMonthMissing) {
+      const missing = [];
+      if (!body.cooperadoId) missing.push('Cooperado');
+      if (!body.year) missing.push('Ano');
+      if (isMonthMissing) missing.push('Mês');
+      return NextResponse.json({ error: `${missing.join(', ')} são obrigatórios` }, { status: 400 });
     }
 
     const [newPaystub] = await db.insert(paystubs).values({
       cooperadoId: body.cooperadoId,
-      postoTrabalhoId: body.postoTrabalhoId,
+      postoTrabalhoId: body.postoTrabalhoId && body.postoTrabalhoId !== '' ? body.postoTrabalhoId : null,
       type: body.type || 'Contra Cheque',
-      month: parseInt(body.month),
+      month: body.month ? parseInt(body.month) : 0,
       year: parseInt(body.year),
-      valorBruto: body.valorBruto,
-      valorLiquido: body.valorLiquido,
+      valorBruto: body.valorBruto || '0',
+      valorLiquido: body.valorLiquido || '0',
       fileUrl: body.fileUrl,
     }).returning();
 

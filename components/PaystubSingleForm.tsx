@@ -154,7 +154,11 @@ export default function PaystubSingleForm({ initialData, isEdit = false }: Payst
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          postoTrabalhoId: formData.postoTrabalhoId && formData.postoTrabalhoId !== '' ? formData.postoTrabalhoId : null,
+          month: formData.type === 'Contra Cheque' ? formData.month : '0'
+        }),
       });
 
       if (res.ok) {

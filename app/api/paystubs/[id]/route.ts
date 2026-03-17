@@ -43,8 +43,18 @@ export async function PATCH(
     const body = await req.json();
 
     const updateData: any = { ...body };
-    if (body.month) updateData.month = parseInt(body.month);
-    if (body.year) updateData.year = parseInt(body.year);
+    
+    if (body.month !== undefined) {
+      updateData.month = body.month && body.month !== '' ? parseInt(body.month) : 0;
+    }
+    
+    if (body.year !== undefined) {
+      updateData.year = body.year !== '' ? parseInt(body.year) : new Date().getFullYear();
+    }
+    
+    if (body.postoTrabalhoId !== undefined) {
+      updateData.postoTrabalhoId = body.postoTrabalhoId && body.postoTrabalhoId !== '' ? body.postoTrabalhoId : null;
+    }
 
     const [updated] = await db.update(paystubs)
       .set(updateData)

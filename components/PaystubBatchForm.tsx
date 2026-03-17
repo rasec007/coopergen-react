@@ -358,6 +358,8 @@ export default function PaystubBatchForm() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             ...commonData,
+            postoTrabalhoId: commonData.postoTrabalhoId && commonData.postoTrabalhoId !== '' ? commonData.postoTrabalhoId : null,
+            month: commonData.type === 'Contra Cheque' ? commonData.month : '0',
             cooperadoId: item.linkedCooperadoId,
             fileUrl: item.fileUrl, 
             valorBruto: '0',
