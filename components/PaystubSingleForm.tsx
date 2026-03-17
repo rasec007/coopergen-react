@@ -121,18 +121,24 @@ export default function PaystubSingleForm({ initialData, isEdit = false }: Payst
       setError('O campo Tipo é obrigatório.');
       return;
     }
-    if (!formData.postoTrabalhoId || formData.postoTrabalhoId === '') {
-      setError('O campo Posto de Trabalho é obrigatório.');
-      return;
+    
+    // Validação condicional baseada no tipo
+    if (formData.type === 'Contra Cheque') {
+      if (!formData.postoTrabalhoId || formData.postoTrabalhoId === '') {
+        setError('O campo Posto de Trabalho é obrigatório.');
+        return;
+      }
+      if (!formData.month || formData.month === '') {
+        setError('O campo Mês é obrigatório.');
+        return;
+      }
     }
+
     if (!formData.year || formData.year === '') {
       setError('O campo Ano é obrigatório.');
       return;
     }
-    if (!formData.month || formData.month === '') {
-      setError('O campo Mês é obrigatório.');
-      return;
-    }
+    
     if (!formData.fileUrl || formData.fileUrl === '') {
       setError('O arquivo PDF é obrigatório.');
       return;
@@ -198,22 +204,27 @@ export default function PaystubSingleForm({ initialData, isEdit = false }: Payst
                    {['2026', '2025', '2024', '2023', '2022', '2021', '2020'].map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
-              <div className="input-field">
-                <label htmlFor="month">Mês *</label>
-                <select id="month" value={formData.month} onChange={handleChange}>
-                   <option value="">Selecione...</option>
-                   {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                </select>
-              </div>
+              
+              {formData.type === 'Contra Cheque' && (
+                <div className="input-field animate-in">
+                  <label htmlFor="month">Mês *</label>
+                  <select id="month" value={formData.month} onChange={handleChange}>
+                     <option value="">Selecione...</option>
+                     {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
 
-            <div className="input-field">
-              <label htmlFor="postoTrabalhoId">Posto de Trabalho *</label>
-              <select id="postoTrabalhoId" value={formData.postoTrabalhoId} onChange={handleChange}>
-                <option value="">Selecione o posto...</option>
-                {postos.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
+            {formData.type === 'Contra Cheque' && (
+              <div className="input-field animate-in">
+                <label htmlFor="postoTrabalhoId">Posto de Trabalho *</label>
+                <select id="postoTrabalhoId" value={formData.postoTrabalhoId} onChange={handleChange}>
+                  <option value="">Selecione o posto...</option>
+                  {postos.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+            )}
 
             <div className="input-field">
               <label htmlFor="file">Arquivo PDF</label>
@@ -263,7 +274,9 @@ export default function PaystubSingleForm({ initialData, isEdit = false }: Payst
         .btn-save { padding: 12px 40px; background: #83004c; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; max-width: 200px; order: 1; }
         .error-message { margin-top: 16px; padding: 10px; background: #fef2f2; border: 1px solid #ef4444; border-radius: 8px; color: #dc2626; text-align: center; font-size: 13px; }
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .animate-in { animation: slideIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
         @media (min-width: 480px) { .actions { flex-direction: row; justify-content: center; } .btn-cancel { order: 1; } .btn-save { order: 2; } }
       `}</style>
     </div>

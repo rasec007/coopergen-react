@@ -321,16 +321,20 @@ export default function PaystubBatchForm() {
       setError('O campo Tipo é obrigatório.');
       return;
     }
-    if (!commonData.postoTrabalhoId || commonData.postoTrabalhoId === '') {
-      setError('O campo Posto de Trabalho é obrigatório.');
-      return;
+    // Validações condicionais baseada no tipo
+    if (commonData.type === 'Contra Cheque') {
+      if (!commonData.postoTrabalhoId || commonData.postoTrabalhoId === '') {
+        setError('O campo Posto de Trabalho é obrigatório.');
+        return;
+      }
+      if (!commonData.month || commonData.month === '') {
+        setError('O campo Mês é obrigatório.');
+        return;
+      }
     }
+
     if (!commonData.year || commonData.year === '') {
       setError('O campo Ano é obrigatório.');
-      return;
-    }
-    if (!commonData.month || commonData.month === '') {
-      setError('O campo Mês é obrigatório.');
       return;
     }
 
@@ -392,13 +396,15 @@ export default function PaystubBatchForm() {
                 {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
-            <div className="input-field">
-              <label>Posto de Trabalho *</label>
-              <select value={commonData.postoTrabalhoId} onChange={e => setCommonData({...commonData, postoTrabalhoId: e.target.value})}>
-                <option value="">Selecione o posto...</option>
-                {postos.map((p: PostoTrabalho) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
+            {commonData.type === 'Contra Cheque' && (
+              <div className="input-field animate-in">
+                <label>Posto de Trabalho *</label>
+                <select value={commonData.postoTrabalhoId} onChange={e => setCommonData({...commonData, postoTrabalhoId: e.target.value})}>
+                  <option value="">Selecione o posto...</option>
+                  {postos.map((p: PostoTrabalho) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+            )}
             <div className="input-field">
               <label>Ano *</label>
               <select value={commonData.year} onChange={e => setCommonData({...commonData, year: e.target.value})}>
@@ -406,12 +412,14 @@ export default function PaystubBatchForm() {
                 {['2026', '2025', '2024', '2023', '2022', '2021', '2020'].map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
-            <div className="input-field">
-              <label>Mês</label>
-              <select value={commonData.month} onChange={e => setCommonData({...commonData, month: e.target.value})}>
-                {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-            </div>
+            {commonData.type === 'Contra Cheque' && (
+              <div className="input-field animate-in">
+                <label>Mês *</label>
+                <select value={commonData.month} onChange={e => setCommonData({...commonData, month: e.target.value})}>
+                  {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="dropzone-area">
@@ -529,7 +537,9 @@ export default function PaystubBatchForm() {
         .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .animate-in { animation: slideIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
         @media (max-width: 768px) {
           .common-grid { grid-template-columns: 1fr; }
