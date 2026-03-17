@@ -117,8 +117,8 @@ export default function PaystubBatchForm() {
       // 1. MDB (Recibo de Cooperados): "Empregado Cargo Lotação 002376 NOME CARGO"
       /(?:Empregado\s+Cargo\s+Lotação|Empregado\s+Cargo\/Lotação)[\s\d]+([A-ZÀ-Ÿ]{2,}(?:\s+[A-ZÀ-Ÿ]{1,})+)/i,
 
-      // 2. Coopassend/Comprovante RF: "CPF Título de Eleitor Nome Completo" + números + NOME
-      /CPF\s+T[íi]tulo\s+de\s+Eleitor\s+Nome\s+Completo[\s\d.\-\/]+([A-ZÀ-Ÿ]{2,}(?:\s+[A-ZÀ-Ÿ]{1,})+)/i,
+      // 2. Coopassend/Comprovante RF: "CPF Título de Eleitor Nome Completo" + números (ou ___ quando em branco) + NOME
+      /CPF\s+T[íi]tulo\s+de\s+Eleitor\s+Nome\s+Completo[\s\d._\-\/]+([A-ZÀ-Ÿ]{2,}(?:\s+[A-ZÀ-Ÿ]{1,})+)/i,
 
       // 3. Coopsic e outros: "Nome Completo:" ou "Empregado:" + nome direto
       /(?:Nome\s+Completo|Empregado)[:\s]+(?:\d+\s+)?(?:Cargo\s+Lotação\s+|Cargo\/Lotação\s+)?(?!(?:Cargo\s+Lotação|Cargo\/Lotação|CNPJ|CPF|Data|Assinatura))([A-ZÀ-Ÿ]{2,}(?:\s+[A-ZÀ-Ÿ]{1,})+)/i,
@@ -185,7 +185,11 @@ export default function PaystubBatchForm() {
 
     const match = cooperados.find((c: Cooperado) => {
       const coopNameClean = c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-      const matriculaMatch = c.matricula && cleanFileName.includes(c.matricula.toLowerCase());
+      
+      // Evita confundir anos comuns com matrícula no nome do arquivo
+      const isYear = ['2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'].includes(c.matricula);
+      const matriculaMatch = !isYear && c.matricula && new RegExp(`\\b${c.matricula}\\b`).test(cleanFileName);
+      
       const cpfMatch = c.cpf && cleanFileName.includes(c.cpf.replace(/\D/g, ''));
       
       // Busca pelo nome completo ou pelo menos os dois primeiros nomes
@@ -245,20 +249,29 @@ export default function PaystubBatchForm() {
           });
           if (foundInContent) {
             nameFound = foundInContent.name;
-            if (!linkedId) linkedId = foundInContent.id;
           }
         }
         
         if (nameFound) {
           extractedName = nameFound;
-          if (!linkedId) {
-            const nameMatch = cooperados.find((c: Cooperado) => {
-               const n1 = c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-               const n2 = nameFound!.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-               return n1 === n2 || n2.includes(n1) || n1.includes(n2);
-            });
-            if (nameMatch) linkedId = nameMatch.id;
+          // Se encontramos um nome no PDF, tentamos encontrar o cooperado correspondente abaixo.
+          // Isso tem prioridade sobre a identificação feita pelo nome do arquivo acima.
+          const nameMatch = cooperados.find((c: Cooperado) => {
+             const n1 = c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+             const n2 = nameFound!.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+             return n1 === n2 || n2.includes(n1) || n1.includes(n2);
+          });
+          if (nameMatch) {
+            linkedId = nameMatch.id;
+          } else {
+            // Se achou o nome mas não deu match exato com nenhum cooperado ID
+            linkedId = '';
           }
+        } else {
+          // Se é um PDF e não conseguimos extrair o nome de dentro dele,
+          // limpamos o vínculo que veio do nome do arquivo para evitar falsos positivos
+          extractedName = 'Nome não encontrado';
+          linkedId = '';
         }
       }
 
@@ -441,7 +454,7 @@ export default function PaystubBatchForm() {
                         </div>
                       </td>
                       <td>
-                        <span className={`found-name ${item.extractedName === 'Não identificado' ? 'error' : ''}`}>
+                        <span className={`found-name ${item.extractedName === 'Nome não encontrado' ? 'error' : ''}`}>
                           {item.extractedName}
                         </span>
                       </td>
@@ -450,7 +463,7 @@ export default function PaystubBatchForm() {
                           options={cooperados}
                           value={item.linkedCooperadoId}
                           onChange={(id) => handleLinkedChange(index, id)}
-                          placeholder="Vincular manual..."
+                          placeholder="Nome não encontrado"
                         />
                       </td>
                       <td className="center">
