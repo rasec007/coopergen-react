@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes);
 
     // Ensure directory exists
-    const storageDir = join(process.cwd(), 'storage-coopergen');
+    const storageDir = join(process.cwd(), 'storage');
     await mkdir(storageDir, { recursive: true });
     
     // Create unique filename

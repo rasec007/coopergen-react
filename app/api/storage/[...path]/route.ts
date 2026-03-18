@@ -14,15 +14,35 @@ export async function GET(
 
     const { path } = await params;
     const fileName = path.join('/');
-    const storageDir = join(process.cwd(), 'storage-coopergen');
-    const filePath = join(storageDir, fileName);
+    
+    // Lista de pastas para buscar (Nova primeiro, depois a antiga como fallback)
+    const storageDirs = [
+      join(process.cwd(), 'storage'),
+      join(process.cwd(), 'storage-coopergen')
+    ];
 
-    // Security check: ensure the file is within the storage-coopergen directory
-    if (!filePath.startsWith(storageDir)) {
-      return new NextResponse('Acesso negado', { status: 403 });
+    let fileBuffer: Buffer | null = null;
+    let currentPath = '';
+
+    for (const dir of storageDirs) {
+      const testPath = join(dir, fileName);
+      
+      // Validação de segurança: garantir que o caminho não saia da pasta permitida
+      if (!testPath.startsWith(dir)) continue;
+
+      try {
+        fileBuffer = await readFile(testPath);
+        currentPath = testPath;
+        break; // Encontrou o arquivo, sai do loop
+      } catch (e) {
+        // Se não encontrou nesta pasta, tenta a próxima
+        continue;
+      }
     }
 
-    const fileBuffer = await readFile(filePath);
+    if (!fileBuffer) {
+      return new NextResponse('Arquivo não encontrado', { status: 404 });
+    }
     
     // Determine content type
     let contentType = 'application/octet-stream';
@@ -34,7 +54,7 @@ export async function GET(
       contentType = 'image/jpeg';
     }
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `inline; filename="${fileName}"`,
