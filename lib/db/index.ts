@@ -8,10 +8,17 @@ declare global {
   var _pgPool: Pool | undefined;
 }
 
+const getDatabaseUrl = () => {
+  const env = process.env.NODE_ENV as any;
+  if (env === 'prod') return process.env.DATABASE_URL_PROD;
+  if (env === 'deve') return process.env.DATABASE_URL_DEVE;
+  return process.env.DATABASE_URL; // Fallback para desenvolvimento local padrão
+};
+
 const pool =
   globalThis._pgPool ??
   new Pool({
-    connectionString: process.env.DATABASE_URL!,
+    connectionString: getDatabaseUrl()!,
     max: 20,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
