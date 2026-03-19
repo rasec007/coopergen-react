@@ -10,13 +10,8 @@ declare global {
 
 const getDatabaseUrl = () => {
   const env = process.env.NODE_ENV as string;
-  let url = process.env.DATABASE_URL; // Default
-
-  if (env === 'prod' || env === 'production') {
-    url = process.env.DATABASE_URL_PROD;
-  } else if (env === 'deve' || env === 'development') {
-    url = process.env.DATABASE_URL_DEVE;
-  }
+  // Agora usamos apenas um banco, mas mantemos o fallback por segurança
+  const url = process.env.DATABASE_URL || process.env.DATABASE_URL_PROD || process.env.DATABASE_URL_DEVE;
   
   console.log(`[DB] Conectando ao banco: ${url?.split('/').pop()?.split('?')[0]} (NODE_ENV: ${env})`);
   return url;

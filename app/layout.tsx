@@ -14,9 +14,9 @@ export const metadata: Metadata = {
   description: "Sistema de gestão coopergen com acesso em tempo real",
   keywords: ["coopergen", "gestão", "cooperativa"],
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/logo-coopergen.png",
+    shortcut: "/logo-coopergen.png",
+    apple: "/logo-coopergen.png",
   },
 };
 

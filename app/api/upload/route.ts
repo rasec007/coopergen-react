@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     
     // Return the virtual path (the one we'll use in our storage API)
     return NextResponse.json({ 
-      url: `/api/storage/${fileName}`,
+      url: `/storage/${fileName}`,
       fileName: originalName 
     });
   } catch (error) {

@@ -10,11 +10,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Carregar variáveis de ambiente
-dotenv.config(); // Tenta carregar do .env se existir
-dotenv.config({ path: join(__dirname, '../.env.local') }); // Tenta carregar do .env.local se existir
+dotenv.config({ override: true }); // Tenta carregar do .env se existir
+dotenv.config({ path: join(__dirname, '../.env.local'), override: true }); // Tenta carregar do .env.local se existir
 
 const NODE_ENV = process.env.NODE_ENV || 'deve';
-const dbUrl = (NODE_ENV === 'prod' || NODE_ENV === 'production') ? process.env.DATABASE_URL_PROD : process.env.DATABASE_URL_DEVE;
+const dbUrl = process.env.DATABASE_URL || ((NODE_ENV === 'prod' || NODE_ENV === 'production') ? process.env.DATABASE_URL_PROD : process.env.DATABASE_URL_DEVE);
 
 if (!dbUrl) {
   console.error(`ERRO: DATABASE_URL para o ambiente ${NODE_ENV} não definida no .env.local`);

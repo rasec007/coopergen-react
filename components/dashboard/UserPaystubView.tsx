@@ -93,7 +93,9 @@ export default function UserPaystubView({ userName }: { userName: string }) {
           {paystubs.map((item) => (
             <div key={item.id} className="paystub-row">
               <div className="info-col">
-                <span className="month-label"><strong>Mês:</strong> {MONTHS.find(m => m.value === item.month)?.label}</span>
+                {item.type !== 'Rendimento' && item.type !== 'Rateio' && (
+                  <span className="month-label"><strong>Mês:</strong> {MONTHS.find(m => m.value === item.month)?.label}</span>
+                )}
                 <span className="year-label">Ano: {item.year}</span>
               </div>
               <a href={item.fileUrl} target="_blank" className="download-link">

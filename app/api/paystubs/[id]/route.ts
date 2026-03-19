@@ -58,10 +58,44 @@ export async function PATCH(
       updateData.postoTrabalhoId = body.postoTrabalhoId && body.postoTrabalhoId !== '' ? body.postoTrabalhoId : null;
     }
 
+    // 1. Buscar o registro atual para saber qual era o arquivo antigo
+    const [existing] = await db
+      .select({ fileUrl: paystubs.fileUrl })
+      .from(paystubs)
+      .where(eq(paystubs.id, id))
+      .limit(1);
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Contra cheque não encontrado' }, { status: 404 });
+    }
+
+    // 2. Realizar o update no banco
     const [updated] = await db.update(paystubs)
       .set(updateData)
       .where(eq(paystubs.id, id))
       .returning();
+
+    // 3. Se o arquivo mudou, excluir o antigo para evitar órfãos
+    if (body.fileUrl && existing.fileUrl && body.fileUrl !== existing.fileUrl) {
+      try {
+        const fileName = existing.fileUrl.split('/').pop();
+        if (fileName) {
+          const filePath = path.join(process.cwd(), 'storage', fileName);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log(`[UPDATE] Arquivo antigo removido: ${filePath}`);
+          } else {
+            const oldPath = path.join(process.cwd(), 'storage-coopergen', fileName);
+            if (fs.existsSync(oldPath)) {
+              fs.unlinkSync(oldPath);
+              console.log(`[UPDATE] Arquivo antigo removido (pasta legada): ${oldPath}`);
+            }
+          }
+        }
+      } catch (fsError) {
+        console.error('[UPDATE] Erro ao excluir arquivo antigo:', fsError);
+      }
+    }
 
     if (!updated) {
       return NextResponse.json({ error: 'Contra cheque não encontrado' }, { status: 404 });
@@ -98,7 +132,7 @@ export async function DELETE(
     // Excluir arquivo físico se houver
     if (existing.fileUrl) {
       try {
-        // Extrair o nome do arquivo da URL (ex: /api/storage/arquivo.pdf)
+        // Extrair o nome do arquivo da URL (ex: /storage/arquivo.pdf)
         const fileName = existing.fileUrl.split('/').pop();
         if (fileName) {
           const filePath = path.join(process.cwd(), 'storage', fileName);

@@ -51,9 +51,9 @@ export default function PaystubsPage() {
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   
   // Filters
-  const [filterType, setFilterType] = useState('all');
+  const [filterType, setFilterType] = useState('Contra Cheque');
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
-  const [filterMonth, setFilterMonth] = useState('all');
+  const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString());
   const [filterPosto, setFilterPosto] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -212,16 +212,22 @@ export default function PaystubsPage() {
                   <div className="card-content-wrapper">
                     <div className="info-line l1">
                       <span className="info-item"><strong>Cooperado:</strong> {item.cooperado?.name}</span>
-                      <span className="info-separator">|</span>
-                      <span className="info-item"><strong>Posto:</strong> {item.postoTrabalho?.name || '-'}</span>
+                      {item.type !== 'Rendimento' && item.type !== 'Rateio' && (
+                        <>
+                          <span className="info-separator">|</span>
+                          <span className="info-item"><strong>Posto:</strong> {item.postoTrabalho?.name || '-'}</span>
+                        </>
+                      )}
                     </div>
 
                     <div className="info-line l2">
                       <span className="info-item"><strong>Ano:</strong> {item.year}</span>
-                      <span className="info-separator">|</span>
-                      <span className="info-item"><strong>Mês:</strong> {MONTHS.find(m => m.value === item.month)?.label}</span>
-                      <span className="info-separator">|</span>
-                      <span className="info-item"><strong>Tipo:</strong> {item.type}</span>
+                      {item.type !== 'Rendimento' && item.type !== 'Rateio' && (
+                        <>
+                          <span className="info-separator">|</span>
+                          <span className="info-item"><strong>Mês:</strong> {MONTHS.find(m => m.value === item.month)?.label}</span>
+                        </>
+                      )}
                     </div>
                     
                     <div className="card-actions-row">

@@ -453,7 +453,7 @@ export default function PublicPaystubPage() {
                       {filterType === 'Contra Cheque' ? (
                         <span className="month-label"><strong>Mês:</strong> {MONTHS.find(m => m.value === item.month)?.label}</span>
                       ) : (
-                        <span className="month-label"><strong>{filterType} {item.year}</strong></span>
+                        <span className="month-label"><strong>Ano: {item.year}</strong></span>
                       )}
                     </div>
                     <a href={item.fileUrl} target="_blank" className="download-link">
