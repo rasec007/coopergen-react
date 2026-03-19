@@ -13,7 +13,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../.env.local') });
 
 const NODE_ENV = process.env.NODE_ENV || 'deve';
-const dbUrl = NODE_ENV === 'prod' ? process.env.DATABASE_URL_PROD : process.env.DATABASE_URL_DEVE;
+const dbUrl = (NODE_ENV === 'prod' || NODE_ENV === 'production') ? process.env.DATABASE_URL_PROD : process.env.DATABASE_URL_DEVE;
 
 if (!dbUrl) {
   console.error(`ERRO: DATABASE_URL para o ambiente ${NODE_ENV} não definida no .env.local`);
