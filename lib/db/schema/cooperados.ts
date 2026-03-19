@@ -28,6 +28,7 @@ export const cooperados = pgTable('cooperados', {
   perfil: varchar('perfil', { length: 50 }).default('Cooperado'),
   status: varchar('status', { length: 20 }).default('Ativo').notNull(),
   isActive: boolean('is_active').default(true).notNull(),
+  profileConfirmed: boolean('profile_confirmed').default(false).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

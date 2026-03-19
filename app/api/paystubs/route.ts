@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
             console.log(`[Notification] Cooperado encontrado: ${coop.name}. Email: ${coop.email}, Fone: ${coop.phone}`);
             const itemType = body.type || 'Contra Cheque';
             const fileName = body.fileUrl?.split('/').pop() || '';
-            const publicUrl = `https://coopergen-new.c2net.com.br/storage/${fileName}`;
+            const publicUrl = `https://coopergen-new.c2net.com.br/api/storage/${fileName}`;
             
             const monthNames = [
               'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',

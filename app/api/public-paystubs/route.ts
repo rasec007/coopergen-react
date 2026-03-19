@@ -18,7 +18,10 @@ export async function POST(req: NextRequest) {
         id: cooperados.id, 
         name: cooperados.name, 
         cpf: cooperados.cpf,
-        isActive: cooperados.isActive
+        isActive: cooperados.isActive,
+        email: cooperados.email,
+        phone: cooperados.phone,
+        profileConfirmed: cooperados.profileConfirmed
       })
       .from(cooperados)
       .where(eq(cooperados.matricula, matricula))
@@ -43,14 +46,23 @@ export async function POST(req: NextRequest) {
 
     // Se ano não foi enviado, apenas valida o acesso e retorna o nome
     if (!year) {
-      return NextResponse.json({ success: true, name: coop.name });
+      return NextResponse.json({ 
+        success: true, 
+        name: coop.name,
+        email: coop.email,
+        phone: coop.phone,
+        profileConfirmed: coop.profileConfirmed
+      });
     }
 
     // Se ano foi enviado, busca os documentos
     let conditions = [
-      eq(paystubs.cooperadoId, coop.id),
-      eq(paystubs.year, parseInt(year))
+      eq(paystubs.cooperadoId, coop.id)
     ];
+
+    if (year !== 'all') {
+      conditions.push(eq(paystubs.year, parseInt(year)));
+    }
 
     if (type && type !== 'all') {
       conditions.push(eq(paystubs.type, type));
@@ -58,12 +70,15 @@ export async function POST(req: NextRequest) {
 
     const results = await db.query.paystubs.findMany({
       where: and(...conditions),
-      orderBy: (ps, { desc, asc }) => [desc(ps.month)],
+      orderBy: (ps, { desc, asc }) => [desc(ps.year), desc(ps.month)],
     });
 
     return NextResponse.json({ 
       success: true, 
       name: coop.name, 
+      email: coop.email,
+      phone: coop.phone,
+      profileConfirmed: coop.profileConfirmed,
       documents: results 
     });
 

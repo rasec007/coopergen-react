@@ -44,13 +44,16 @@ const eraseCookie = (name: string) => {
 };
 
 export default function PublicPaystubPage() {
-  const [step, setStep] = useState(0); // 0: Initializing, 1: Matricula, 2: CPF, 3: Ano, 4: Tipo, 5: Resultados
+  const [step, setStep] = useState(0); // 0: Initializing, 1: Matricula, 2: CPF, 3: Tipo, 4: Ano, 5: Resultados
   const [matricula, setMatricula] = useState('');
   const [cpfPrefix, setCpfPrefix] = useState('');
-  const [year, setYear] = useState('');
+  const [year, setYear] = useState(YEARS[0]);
   const [filterType, setFilterType] = useState('Contra Cheque');
   const [userName, setUserName] = useState('');
   const [paystubs, setPaystubs] = useState<any[]>([]);
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [profileConfirmed, setProfileConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -82,6 +85,16 @@ export default function PublicPaystubPage() {
     }
   }, [step, filterType]);
 
+  const maskPhone = (v: string) => {
+    let r = v.replace(/\D/g, "");
+    if (r.length > 11) r = r.substring(0, 11);
+    if (r.length > 7) r = `(${r.substring(0, 2)}) ${r.substring(2, 3)} ${r.substring(3, 7)}.${r.substring(7)}`;
+    else if (r.length > 3) r = `(${r.substring(0, 2)}) ${r.substring(2, 3)} ${r.substring(3)}`;
+    else if (r.length > 2) r = `(${r.substring(0, 2)}) ${r.substring(2)}`;
+    else if (r.length > 0) r = `(${r}`;
+    return r;
+  };
+
   const validateAndGetUserName = async (m: string, c: string) => {
     try {
       const res = await fetch('/api/public-paystubs', {
@@ -90,7 +103,12 @@ export default function PublicPaystubPage() {
         body: JSON.stringify({ matricula: m, cpfPrefix: c })
       });
       const data = await res.json();
-      if (res.ok) setUserName(data.name);
+      if (res.ok) {
+        setUserName(data.name);
+        setEmail(data.email || '');
+        setPhone(data.phone || '');
+        setProfileConfirmed(data.profileConfirmed);
+      }
     } catch (err) { console.error(err); }
   };
 
@@ -110,17 +128,62 @@ export default function PublicPaystubPage() {
         return;
       }
       setCookie('pub_cpf', cpfPrefix);
-      setStep(3);
-    } else if (step === 3) {
+      validateBeforeType();
+    } else if (step === 3) { // Tipo
+      setCookie('pub_type', filterType);
+      // Se for Contra Cheque, precisa do Ano.
+      // Segundo o usuário: "se eu responder que o tipo sendo Rendimento ou Rateio nao tem necessidade de mostar o ano ja entra direto"
+      if (filterType === 'Contra Cheque') {
+        setStep(4);
+      } else {
+        // Para Rendimento/Rateio, "entra direto" com todos os anos.
+        // Chamaremos fetchData com year='all'
+        setYear('all'); 
+        setStep(5);
+      }
+    } else if (step === 4) { // Ano
       if (!year) {
         setError('Por favor, selecione o ano.');
         return;
       }
       setCookie('pub_year', year);
-      validateBeforeType();
-    } else if (step === 4) {
-      setCookie('pub_type', filterType);
       setStep(5);
+    }
+  };
+
+  const handleConfirmProfile = async () => {
+    setLoading(true);
+    setError('');
+    
+    // Validar email e fone
+    if (!email || !email.includes('@')) {
+      setError('E-mail inválido.');
+      setLoading(false);
+      return;
+    }
+    if (phone.length < 16) { // (85) 9 8888.8888 = 16 chars com mascara
+      setError('Telefone incompleto.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/public-profile/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ matricula, cpfPrefix, email, phone })
+      });
+      if (res.ok) {
+        setProfileConfirmed(true);
+        setStep(3); // Vai para o passo de Tipo após confirmar perfil
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Erro ao confirmar perfil.');
+      }
+    } catch (err) {
+      setError('Erro de conexão.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -137,7 +200,16 @@ export default function PublicPaystubPage() {
       
       if (res.ok) {
         setUserName(data.name);
-        setStep(4);
+        setEmail(data.email || '');
+        setPhone(data.phone || '');
+        setProfileConfirmed(data.profileConfirmed);
+
+        // Se o perfil já estiver confirmado, vai para o passo 3 (Tipo). Se não, vai para o 2.5 (confirmação)
+        if (data.profileConfirmed) {
+          setStep(3);
+        } else {
+          setStep(2.5);
+        }
       } else {
         setError(data.error || 'Dados inválidos.');
         if (data.error?.toLowerCase().includes('matrícula')) setStep(1);
@@ -170,7 +242,12 @@ export default function PublicPaystubPage() {
       const res = await fetch('/api/public-paystubs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matricula, cpfPrefix, year, type: filterType })
+        body: JSON.stringify({ 
+          matricula, 
+          cpfPrefix, 
+          year: filterType === 'Contra Cheque' ? year : 'all', 
+          type: filterType 
+        })
       });
       const data = await res.json();
       if (res.ok) {
@@ -237,7 +314,79 @@ export default function PublicPaystubPage() {
           </div>
         )}
 
+        {step === 2.5 && (
+          <div className="card-step">
+            <h1 className="title">CONFIRME SEUS DADOS</h1>
+            <p className="subtitle">Seus dados estão corretos? Se necessário, atualize-os abaixo.</p>
+            
+            <div style={{ textAlign: 'left', marginBottom: '16px' }}>
+                <label className="field-label">E-MAIL</label>
+                <input 
+                  type="email" 
+                  className="large-input"
+                  style={{ fontSize: 16, textAlign: 'left' }}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                />
+            </div>
+
+            <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+                <label className="field-label">CELULAR (WHATSAPP)</label>
+                <input 
+                  type="text" 
+                  className="large-input"
+                  style={{ fontSize: 16, textAlign: 'left' }}
+                  value={phone}
+                  onChange={(e) => setPhone(maskPhone(e.target.value))}
+                  placeholder="(85) 9 9999.9999"
+                />
+            </div>
+
+            {error && <p className="error-msg">{error}</p>}
+            
+            <div className="actions-row">
+                <button className="btn-back" onClick={() => setStep(2)}>Voltar</button>
+                <button className="btn-action" onClick={handleConfirmProfile} disabled={loading}>
+                  {loading ? 'Processando...' : 'Confirmar Dados'}
+                </button>
+            </div>
+            
+            <button 
+              className="btn-link" 
+              style={{ marginTop: 20 }}
+              onClick={() => setStep(3)}
+            >
+              Confirmar mais tarde (continuar)
+            </button>
+          </div>
+        )}
+
         {step === 3 && (
+          <div className="card-step">
+            <h1 className="title">O QUE VOCÊ PROCURA?</h1>
+            <p className="subtitle">Selecione o tipo de documento.</p>
+            
+            <div className="type-buttons vertical">
+              {['Contra Cheque', 'Rendimento', 'Rateio'].map(t => (
+                <button 
+                  key={t}
+                  className={`type-btn large ${filterType === t ? 'active' : ''}`}
+                  onClick={() => { setFilterType(t); setCookie('pub_type', t); }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            
+            <div className="actions-row" style={{ marginTop: 24 }}>
+                <button className="btn-back" onClick={() => setStep(2)}>Voltar</button>
+                <button className="btn-action" onClick={handleNextStep}>Próximo</button>
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
           <div className="card-step">
             <h1 className="title">SELECIONE O ANO</h1>
             <p className="subtitle">Escolha o ano base para a consulta.</p>
@@ -252,33 +401,10 @@ export default function PublicPaystubPage() {
             </select>
             {error && <p className="error-msg">{error}</p>}
             <div className="actions-row">
-                <button className="btn-back" onClick={() => setStep(2)}>Voltar</button>
+                <button className="btn-back" onClick={() => setStep(3)}>Voltar</button>
                 <button className="btn-action" onClick={handleNextStep} disabled={loading}>
                   {loading ? 'Processando...' : 'Próximo'}
                 </button>
-            </div>
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="card-step">
-            <h1 className="title">O QUE VOCÊ PROCURA?</h1>
-            <p className="subtitle">Selecione o tipo de documento ({year}).</p>
-            
-            <div className="type-buttons vertical">
-              {['Contra Cheque', 'Rendimento', 'Rateio'].map(t => (
-                <button 
-                  key={t}
-                  className={`type-btn large ${filterType === t ? 'active' : ''}`}
-                  onClick={() => { setFilterType(t); setCookie('pub_type', t); setStep(5); }}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-            
-            <div className="actions-row" style={{ marginTop: 24 }}>
-                <button className="btn-back" onClick={() => setStep(3)}>Voltar para o Ano</button>
             </div>
           </div>
         )}
@@ -287,13 +413,21 @@ export default function PublicPaystubPage() {
           <div className="results-container">
             <div className="results-section">
               <h2 className="results-title">{filterType.toUpperCase()}S</h2>
-              <p className="total-count">Ano: {year} | Encontrados: {paystubs.length}</p>
+              {filterType === 'Contra Cheque' ? (
+                <p className="total-count">Ano: {year} | Encontrados: {paystubs.length}</p>
+              ) : (
+                <p className="total-count">Todos os anos disponíveis</p>
+              )}
 
               <div className="paystub-list">
                 {paystubs.map((item) => (
                   <div key={item.id} className="paystub-row">
                     <div className="info-col">
-                      <span className="month-label"><strong>Mês:</strong> {MONTHS.find(m => m.value === item.month)?.label}</span>
+                      {filterType === 'Contra Cheque' ? (
+                        <span className="month-label"><strong>Mês:</strong> {MONTHS.find(m => m.value === item.month)?.label}</span>
+                      ) : (
+                        <span className="month-label"><strong>{filterType} {item.year}</strong></span>
+                      )}
                     </div>
                     <a href={item.fileUrl} target="_blank" className="download-link">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="#83004c"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
@@ -314,7 +448,7 @@ export default function PublicPaystubPage() {
                 )}
                 
                 <div className="actions-row footer-actions">
-                    <button className="btn-back small" onClick={() => setStep(4)}>Voltar para Tipos</button>
+                    <button className="btn-back small" onClick={() => setStep(filterType === 'Contra Cheque' ? 4 : 3)}>Voltar</button>
                     <button className="btn-new-search-minimal" onClick={handleNewSearch}>
                         Nova Consulta
                     </button>
@@ -432,6 +566,8 @@ export default function PublicPaystubPage() {
         
         .footer-actions { margin-top: 32px; flex-direction: column; align-items: center; }
         .btn-new-search-minimal { background: none; border: none; color: #64748b; font-size: 14px; text-decoration: underline; cursor: pointer; }
+        .btn-link { background: none; border: none; color: #83004c; font-size: 14px; text-decoration: underline; cursor: pointer; }
+        .field-label { display: block; font-size: 11px; font-weight: 800; color: #83004c; margin-bottom: 4px; letter-spacing: 0.05em; }
 
         .error-msg { color: #ef4444; font-size: 14px; margin-bottom: 16px; font-weight: 500; }
         .loading-state { text-align: center; padding: 20px; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100vh; justify-content: center; }
