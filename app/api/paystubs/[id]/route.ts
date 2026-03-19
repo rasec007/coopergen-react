@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { paystubs } from '@/lib/db/schema/paystubs';
 import { eq } from 'drizzle-orm';
+import fs from 'fs';
+import path from 'path';
 
 export async function GET(
   req: NextRequest,
@@ -79,12 +81,43 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const [deleted] = await db.delete(paystubs)
+    // Buscar o registro para obter o fileUrl antes de deletar
+    const [existing] = await db
+      .select({ fileUrl: paystubs.fileUrl })
+      .from(paystubs)
       .where(eq(paystubs.id, id))
-      .returning();
+      .limit(1);
 
-    if (!deleted) {
+    if (!existing) {
       return NextResponse.json({ error: 'Contra cheque não encontrado' }, { status: 404 });
+    }
+
+    // Excluir do banco
+    await db.delete(paystubs).where(eq(paystubs.id, id));
+
+    // Excluir arquivo físico se houver
+    if (existing.fileUrl) {
+      try {
+        // Extrair o nome do arquivo da URL (ex: /api/storage/arquivo.pdf)
+        const fileName = existing.fileUrl.split('/').pop();
+        if (fileName) {
+          const filePath = path.join(process.cwd(), 'storage', fileName);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log(`Arquivo excluído: ${filePath}`);
+          } else {
+            // Tenta na pasta antiga por compatibilidade
+            const oldPath = path.join(process.cwd(), 'storage-coopergen', fileName);
+            if (fs.existsSync(oldPath)) {
+              fs.unlinkSync(oldPath);
+              console.log(`Arquivo excluído (pasta antiga): ${oldPath}`);
+            }
+          }
+        }
+      } catch (fsError) {
+        console.error('Erro ao excluir arquivo físico:', fsError);
+        // Não retorna erro pois o registro no banco já foi removido
+      }
     }
 
     return NextResponse.json({ message: 'Contra cheque excluído com sucesso' });

@@ -4,3 +4,4 @@ export * from './postos_trabalho';
 export * from './cooperados';
 export * from './paystubs';
 export * from './whatsapp';
+export * from './notifications';

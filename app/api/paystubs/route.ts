@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { paystubs } from '@/lib/db/schema/paystubs';
 import { eq, and, ilike, sql } from 'drizzle-orm';
 import { cooperados } from '@/lib/db/schema/cooperados';
+import { notificationQueue } from '@/lib/db/schema/notifications';
 import { cookies } from 'next/headers';
 import { getAccessTokenFromCookies } from '@/lib/auth/cookies';
 import { verifyAccessToken } from '@/lib/auth/jwt';
@@ -140,7 +141,84 @@ export async function POST(req: NextRequest) {
       fileUrl: body.fileUrl,
     }).returning();
 
-    return NextResponse.json(newPaystub);
+    // ─── Enfileirar Notificações ──────────────────────────────────────────────
+    if (body.sendNotifications !== false) {
+      // Processamento em segundo plano para não bloquear a resposta da API
+      (async () => {
+        try {
+          console.log(`[Notification] Iniciando enfileiramento em background. Cooperado: ${body.cooperadoId}`);
+          
+          // Buscar dados do cooperado para notificação
+          const [coop] = await db
+            .select({ name: cooperados.name, email: cooperados.email, phone: cooperados.phone })
+            .from(cooperados)
+            .where(eq(cooperados.id, body.cooperadoId))
+            .limit(1);
+
+          if (coop) {
+            console.log(`[Notification] Cooperado encontrado: ${coop.name}. Email: ${coop.email}, Fone: ${coop.phone}`);
+            const itemType = body.type || 'Contra Cheque';
+            const fileName = body.fileUrl?.split('/').pop() || '';
+            const publicUrl = `https://coopergen-new.c2net.com.br/storage/${fileName}`;
+            
+            const monthNames = [
+              'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+              'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+            ];
+            
+            let detailLine = '';
+            if (itemType === 'Contra Cheque') {
+              const monthName = monthNames[parseInt(body.month) - 1] || body.month;
+              detailLine = `Segue abaixo o Contra Cheque referênte a "${monthName} de ${body.year}".`;
+            } else {
+              detailLine = `Segue abaixo o ${itemType} referênte a "${body.year}".`;
+            }
+
+            const messageText = `Olá, ${coop.name}.\nSeu ${itemType} está disponível na plataforma e já pode ser baixado.\n\n${detailLine}\n${publicUrl}`;
+
+            const notificationsToInsert = [];
+
+            if (coop.email && coop.email.includes('@')) {
+              notificationsToInsert.push({
+                cooperadoId: body.cooperadoId,
+                type: 'email',
+                recipient: coop.email,
+                payload: {
+                  subject: `Novo ${itemType} Disponível - Coopergen`,
+                  body: messageText,
+                  itemType: itemType
+                }
+              });
+            }
+
+            if (coop.phone) {
+              notificationsToInsert.push({
+                cooperadoId: body.cooperadoId,
+                type: 'whatsapp',
+                recipient: coop.phone,
+                payload: {
+                  body: messageText,
+                  itemType: itemType
+                }
+              });
+            }
+
+            if (notificationsToInsert.length > 0) {
+              await db.insert(notificationQueue).values(notificationsToInsert);
+              console.log(`[Notification] ${notificationsToInsert.length} notificações enfileiradas com sucesso.`);
+            } else {
+              console.log(`[Notification] Nenhuma notificação gerada (falta email e fone).`);
+            }
+          } else {
+            console.warn(`[Notification] Cooperado não encontrado no banco: ${body.cooperadoId}`);
+          }
+        } catch (notificationError) {
+          console.error('[Notification] Erro ao enfileirar em background:', notificationError);
+        }
+      })();
+    }
+
+  return NextResponse.json(newPaystub);
   } catch (error: any) {
     console.error('Error creating paystub:', error);
     return NextResponse.json({ error: 'Erro ao criar contra cheque' }, { status: 500 });

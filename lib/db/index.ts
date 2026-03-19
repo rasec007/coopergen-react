@@ -9,10 +9,17 @@ declare global {
 }
 
 const getDatabaseUrl = () => {
-  const env = process.env.NODE_ENV as any;
-  if (env === 'prod') return process.env.DATABASE_URL_PROD;
-  if (env === 'deve') return process.env.DATABASE_URL_DEVE;
-  return process.env.DATABASE_URL; // Fallback para desenvolvimento local padrão
+  const env = process.env.NODE_ENV as string;
+  let url = process.env.DATABASE_URL; // Default
+
+  if (env === 'prod' || env === 'production') {
+    url = process.env.DATABASE_URL_PROD;
+  } else if (env === 'deve' || env === 'development') {
+    url = process.env.DATABASE_URL_DEVE;
+  }
+  
+  console.log(`[DB] Conectando ao banco: ${url?.split('/').pop()?.split('?')[0]} (NODE_ENV: ${env})`);
+  return url;
 };
 
 const pool =

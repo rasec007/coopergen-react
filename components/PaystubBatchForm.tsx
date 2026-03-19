@@ -53,6 +53,7 @@ export default function PaystubBatchForm() {
     year: new Date().getFullYear().toString(),
     month: (new Date().getMonth() + 1).toString(),
   });
+  const [sendNotifications, setSendNotifications] = useState(true);
 
   const [cooperados, setCooperados] = useState<Cooperado[]>([]);
   const [postos, setPostos] = useState<PostoTrabalho[]>([]);
@@ -364,6 +365,7 @@ export default function PaystubBatchForm() {
             fileUrl: item.fileUrl, 
             valorBruto: '0',
             valorLiquido: '0',
+            sendNotifications,
           }),
         });
       });
@@ -430,6 +432,17 @@ export default function PaystubBatchForm() {
               <span>{processingFiles ? 'Processando arquivos...' : 'Solte aqui seus arquivos ou clique para selecionar'}</span>
               <span className="hint">Apenas arquivos PDF são recomendados</span>
             </label>
+
+            <div className="notification-toggle">
+              <label className="checkbox-container">
+                <input 
+                  type="checkbox" 
+                  checked={sendNotifications} 
+                  onChange={(e) => setSendNotifications(e.target.checked)} 
+                />
+                <span className="checkbox-label">Enviar notificações via E-mail e WhatsApp</span>
+              </label>
+            </div>
             <input 
               id="file-upload" 
               type="file" 
@@ -542,6 +555,11 @@ export default function PaystubBatchForm() {
         .animate-in { animation: slideIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .notification-toggle { margin-top: 20px; display: flex; justify-content: center; }
+        .checkbox-container { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+        .checkbox-container input { cursor: pointer; width: 18px; height: 18px; accent-color: #83004c; }
+        .checkbox-label { font-size: 14px; color: #334155; font-weight: 500; }
 
         @media (max-width: 768px) {
           .common-grid { grid-template-columns: 1fr; }
