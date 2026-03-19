@@ -1,6 +1,6 @@
 import Image from 'next/image';
 
-export default function LogoCoopergen({ size = 120 }: { size?: number }) {
+export default function LogoCoopergen({ size = 120, color }: { size?: number, color?: string }) {
   return (
     <div style={{ width: size, height: 'auto' }}>
       <Image 
