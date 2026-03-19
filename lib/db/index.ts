@@ -1,6 +1,12 @@
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '@/lib/db/schema';
+import dotenv from 'dotenv';
+import { join } from 'path';
+
+// Força o carregamento do .env.local em qualquer ambiente
+dotenv.config();
+dotenv.config({ path: join(process.cwd(), '.env.local'), override: true });
 
 declare global {
   // Prevent multiple pool instances in development (hot reload)
