@@ -25,6 +25,7 @@ export const users = pgTable('users', {
   cpf: varchar('cpf', { length: 14 }),
   workplace: varchar('workplace', { length: 150 }), // Posto de Trabalho
   phone: varchar('phone', { length: 20 }), // Celular
+  birthDate: varchar('birth_date', { length: 10 }),
   avatarUrl: text('avatar_url'),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

@@ -6,9 +6,9 @@ import { eq } from 'drizzle-orm';
 
 export async function POST(req: NextRequest) {
   try {
-    const { matricula, cpfPrefix, email, phone } = await req.json();
+    const { matricula, cpfPrefix, email, phone, birthDate } = await req.json();
 
-    if (!matricula || !cpfPrefix || !email || !phone) {
+    if (!matricula || !cpfPrefix || !email || !phone || !birthDate) {
       return NextResponse.json({ error: 'Todos os campos são obrigatórios' }, { status: 400 });
     }
 
@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
       .set({ 
         email, 
         phone, 
+        birthDate,
         profileConfirmed: true,
         updatedAt: new Date()
       })
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
           .set({ 
             email, 
             phone,
+            birthDate,
             updatedAt: new Date()
           })
           .where(eq(users.id, coop.userId));

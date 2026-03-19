@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
         isActive: cooperados.isActive,
         email: cooperados.email,
         phone: cooperados.phone,
+        birthDate: cooperados.birthDate,
         profileConfirmed: cooperados.profileConfirmed
       })
       .from(cooperados)
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
         name: coop.name,
         email: coop.email,
         phone: coop.phone,
+        birthDate: coop.birthDate,
         profileConfirmed: coop.profileConfirmed
       });
     }
@@ -78,6 +80,7 @@ export async function POST(req: NextRequest) {
       name: coop.name, 
       email: coop.email,
       phone: coop.phone,
+      birthDate: coop.birthDate,
       profileConfirmed: coop.profileConfirmed,
       documents: results 
     });

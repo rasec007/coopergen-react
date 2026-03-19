@@ -53,6 +53,7 @@ export default function PublicPaystubPage() {
   const [paystubs, setPaystubs] = useState<any[]>([]);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [profileConfirmed, setProfileConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -94,6 +95,14 @@ export default function PublicPaystubPage() {
     else if (r.length > 0) r = `(${r}`;
     return r;
   };
+  
+  const maskDate = (v: string) => {
+    let r = v.replace(/\D/g, "");
+    if (r.length > 8) r = r.substring(0, 8);
+    if (r.length > 4) r = `${r.substring(0, 2)}/${r.substring(2, 4)}/${r.substring(4)}`;
+    else if (r.length > 2) r = `${r.substring(0, 2)}/${r.substring(2)}`;
+    return r;
+  };
 
   const validateAndGetUserName = async (m: string, c: string) => {
     try {
@@ -107,6 +116,7 @@ export default function PublicPaystubPage() {
         setUserName(data.name);
         setEmail(data.email || '');
         setPhone(data.phone || '');
+        setBirthDate(data.birthDate || '');
         setProfileConfirmed(data.profileConfirmed);
       }
     } catch (err) { console.error(err); }
@@ -166,12 +176,17 @@ export default function PublicPaystubPage() {
       setLoading(false);
       return;
     }
+    if (birthDate.length < 10) { // dd/mm/yyyy = 10 chars
+      setError('Data de nascimento incompleta.');
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch('/api/public-profile/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matricula, cpfPrefix, email, phone })
+        body: JSON.stringify({ matricula, cpfPrefix, email, phone, birthDate })
       });
       if (res.ok) {
         setProfileConfirmed(true);
@@ -202,6 +217,7 @@ export default function PublicPaystubPage() {
         setUserName(data.name);
         setEmail(data.email || '');
         setPhone(data.phone || '');
+        setBirthDate(data.birthDate || '');
         setProfileConfirmed(data.profileConfirmed);
 
         // Se o perfil já estiver confirmado, vai para o passo 3 (Tipo). Se não, vai para o 2.5 (confirmação)
@@ -340,6 +356,17 @@ export default function PublicPaystubPage() {
                   value={phone}
                   onChange={(e) => setPhone(maskPhone(e.target.value))}
                   placeholder="(85) 9 9999.9999"
+                />
+            </div>
+            <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+                <label className="field-label">DATA DE NASCIMENTO</label>
+                <input 
+                  type="text" 
+                  className="large-input"
+                  style={{ fontSize: 16, textAlign: 'left' }}
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(maskDate(e.target.value))}
+                  placeholder="DD/MM/AAAA"
                 />
             </div>
 

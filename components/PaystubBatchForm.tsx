@@ -426,6 +426,17 @@ export default function PaystubBatchForm() {
             )}
           </div>
 
+          <div className="notification-toggle" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-start' }}>
+            <label className="checkbox-container">
+              <input 
+                type="checkbox" 
+                checked={sendNotifications} 
+                onChange={(e) => setSendNotifications(e.target.checked)} 
+              />
+              <span className="checkbox-label">Enviar notificações via E-mail e WhatsApp</span>
+            </label>
+          </div>
+
           <div className="dropzone-area">
             <label htmlFor="file-upload" className="dropzone-label">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
@@ -433,16 +444,6 @@ export default function PaystubBatchForm() {
               <span className="hint">Apenas arquivos PDF são recomendados</span>
             </label>
 
-            <div className="notification-toggle">
-              <label className="checkbox-container">
-                <input 
-                  type="checkbox" 
-                  checked={sendNotifications} 
-                  onChange={(e) => setSendNotifications(e.target.checked)} 
-                />
-                <span className="checkbox-label">Enviar notificações via E-mail e WhatsApp</span>
-              </label>
-            </div>
             <input 
               id="file-upload" 
               type="file" 

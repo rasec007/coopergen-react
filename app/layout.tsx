@@ -13,6 +13,11 @@ export const metadata: Metadata = {
   title: "CooperGen | Sistema de Gestão",
   description: "Sistema de gestão coopergen com acesso em tempo real",
   keywords: ["coopergen", "gestão", "cooperativa"],
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
